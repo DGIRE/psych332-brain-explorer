@@ -109,6 +109,27 @@
       font-weight: 600;
     }
 
+    /* Highlight mode toggle */
+    .controls {
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .controls label {
+      font-size: 0.85rem;
+      color: #b0c4de;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .controls input[type="checkbox"] {
+      accent-color: #0779BE;
+    }
+
     /* Info panel below the map */
     .info-panel {
       margin-top: 16px;
@@ -152,6 +173,13 @@
     <h1>PSYCH 332 Brain Map Explorer</h1>
     <p>Click on any brain region to identify it</p>
   </header>
+
+  <div class="controls" id="controlsPanel" style="display:none;">
+    <label>
+      <input type="checkbox" id="groupHighlight">
+      Highlight entire anatomical group
+    </label>
+  </div>
 
   <div id="loadingIndicator" class="loading">
     <div class="spinner"></div>
@@ -328,16 +356,17 @@
       const imageData = ctx.getImageData(0, 0, w, h);
       const pixels = imageData.data;
 
-      // Find all pixel IDs that map to the same region name as the selected ID
       const selectedInfo = regionIdMap[String(selectedRegionId)];
       if (!selectedInfo || !selectedInfo.name) return;
 
-      const selectedName = selectedInfo.name;
+      const useGroup = document.getElementById('groupHighlight').checked;
+      const matchKey = useGroup ? selectedInfo.group : selectedInfo.name;
 
-      // Build set of all IDs belonging to this named region
+      // Build set of all IDs belonging to the matched region/group
       const matchingIds = new Set();
       for (const [idStr, info] of Object.entries(regionIdMap)) {
-        if (info.name === selectedName) {
+        const compareKey = useGroup ? info.group : info.name;
+        if (compareKey === matchKey && compareKey) {
           matchingIds.add(parseInt(idStr));
         }
       }
@@ -393,8 +422,9 @@
         return;
       }
 
-      document.getElementById('ttName').textContent = region.name;
-      document.getElementById('ttAbbr').textContent = region.abbreviation || '';
+      const displayName = region.name.charAt(0).toUpperCase() + region.name.slice(1);
+      document.getElementById('ttName').textContent = displayName;
+      document.getElementById('ttAbbr').textContent = (region.abbreviation && region.abbreviation !== 'nan') ? region.abbreviation : '';
       document.getElementById('ttGroup').textContent = region.group || '';
 
       // Position near cursor
@@ -419,10 +449,12 @@
         panel.innerHTML = '<span class="hint">Click on the brain map to select a region</span>';
         return;
       }
+      // Capitalize first letter of name
+      const displayName = region.name.charAt(0).toUpperCase() + region.name.slice(1);
       panel.innerHTML = `
-        <div class="selected-name">${region.name}</div>
+        <div class="selected-name">${displayName}</div>
         <div class="selected-detail">
-          ${region.abbreviation ? `<strong>${region.abbreviation}</strong> — ` : ''}${region.group || ''}
+          ${region.abbreviation && region.abbreviation !== 'nan' ? `<strong>${region.abbreviation}</strong> — ` : ''}${region.group || ''}
         </div>
       `;
     }
@@ -481,9 +513,15 @@
       const blankImg = await loadData();
 
       document.getElementById('loadingIndicator').style.display = 'none';
+      document.getElementById('controlsPanel').style.display = 'flex';
       wrapper.style.display = 'block';
 
       initCanvas(blankImg);
+
+      // Re-highlight when group toggle changes
+      document.getElementById('groupHighlight').addEventListener('change', () => {
+        if (selectedRegionId !== null) redraw();
+      });
     }
 
     init();
