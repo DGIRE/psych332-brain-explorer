@@ -654,10 +654,10 @@
     "subgroup": ""
   },
   "34": {
-    "name": "occipito-temporal gyrus",
-    "abbreviation": "OTG",
-    "group": "Temporal and Occipital Lobes",
-    "subgroup": "Temporal-Occipital"
+    "name": "inferior temporal gyrus",
+    "abbreviation": "ITG",
+    "group": "Temporal Lobe",
+    "subgroup": "Temporal Lobe"
   },
   "37": {
     "name": "superior parietal lobule",
@@ -672,10 +672,10 @@
     "subgroup": "Occipital Lobe"
   },
   "43": {
-    "name": "cingulate gyrus, retrosplenial part",
-    "abbreviation": "CgGr",
-    "group": "Limbic System",
-    "subgroup": "Cingulate Cortex"
+    "name": "lingular gyrus",
+    "abbreviation": "LiG",
+    "group": "Occipital Lobe",
+    "subgroup": "Occipital Lobe"
   },
   "48": {
     "name": "precuneus",
@@ -744,10 +744,10 @@
     "subgroup": "Amygdala"
   },
   "91": {
-    "name": "subiculum",
-    "abbreviation": "S",
-    "group": "Limbic System",
-    "subgroup": "Subicular Complex"
+    "name": "",
+    "abbreviation": "",
+    "group": "",
+    "subgroup": ""
   },
   "92": {
     "name": "caudate nucleus",
@@ -756,10 +756,10 @@
     "subgroup": "Basal Ganglia"
   },
   "93": {
-    "name": "putamen",
-    "abbreviation": "Pu",
-    "group": "Basal Ganglia",
-    "subgroup": "Basal Ganglia"
+    "name": "substantia innominata",
+    "abbreviation": "SI",
+    "group": "Limbic System",
+    "subgroup": "Basal Forebrain"
   },
   "95": {
     "name": "subiculum",
@@ -804,8 +804,8 @@
     "subgroup": "Amygdala"
   },
   "107": {
-    "name": "basolateral nucleus",
-    "abbreviation": "BLA",
+    "name": "basomedial nucleus",
+    "abbreviation": "BMA",
     "group": "Limbic System (Amygdala)",
     "subgroup": "Amygdala"
   },
@@ -930,10 +930,10 @@
     "subgroup": "Hypothalamus"
   },
   "150": {
-    "name": "lateral hypothalamic area, mammillary region",
-    "abbreviation": "LHM",
+    "name": "anterior group of nuclei",
+    "abbreviation": "DTA",
     "group": "Thalamus and Hypothalamus",
-    "subgroup": "Hypothalamus"
+    "subgroup": "Thalamus"
   },
   "152": {
     "name": "anterior group of nuclei",
@@ -942,10 +942,10 @@
     "subgroup": "Thalamus"
   },
   "154": {
-    "name": "lateral group of nuclei, ventral division",
-    "abbreviation": "DTLv",
+    "name": "lateral hypothalamic area, mammillary region",
+    "abbreviation": "LHM",
     "group": "Thalamus and Hypothalamus",
-    "subgroup": "Thalamus"
+    "subgroup": "Hypothalamus"
   },
   "155": {
     "name": "lateral hypothalamic area, mammillary region",
@@ -954,10 +954,10 @@
     "subgroup": "Hypothalamus"
   },
   "156": {
-    "name": "lateral hypothalamic area, mammillary region",
-    "abbreviation": "LHM",
+    "name": "lateral group of nuclei, ventral division",
+    "abbreviation": "DTLv",
     "group": "Thalamus and Hypothalamus",
-    "subgroup": "Hypothalamus"
+    "subgroup": "Thalamus"
   },
   "158": {
     "name": "lateral hypothalamic area, mammillary region",
@@ -1002,14 +1002,14 @@
     "subgroup": "Thalamus"
   },
   "170": {
-    "name": "reticular nucleus of thalamus, left",
-    "abbreviation": "VT",
+    "name": "lateral group of nuclei, ventral division",
+    "abbreviation": "DTLv",
     "group": "Thalamus and Hypothalamus",
     "subgroup": "Thalamus"
   },
   "171": {
-    "name": "reticular nucleus of thalamus, left",
-    "abbreviation": "VT",
+    "name": "lateral group of nuclei, ventral division",
+    "abbreviation": "DTLv",
     "group": "Thalamus and Hypothalamus",
     "subgroup": "Thalamus"
   },
@@ -1020,8 +1020,8 @@
     "subgroup": "Thalamus"
   },
   "175": {
-    "name": "reticular nucleus of thalamus, left",
-    "abbreviation": "VT",
+    "name": "lateral group of nuclei, dorsal division",
+    "abbreviation": "DTLd",
     "group": "Thalamus and Hypothalamus",
     "subgroup": "Thalamus"
   },
@@ -1146,8 +1146,8 @@
     "subgroup": "Brainstem"
   },
   "211": {
-    "name": "paramedian pontine reticular formation",
-    "abbreviation": "RPn",
+    "name": "raphe nuclei of medulla",
+    "abbreviation": "Sp5",
     "group": "Brainstem",
     "subgroup": "Brainstem"
   },
@@ -1158,8 +1158,8 @@
     "subgroup": "Thalamus"
   },
   "214": {
-    "name": "reticular nucleus of thalamus, left",
-    "abbreviation": "VT",
+    "name": "medial geniculate complex",
+    "abbreviation": "MG",
     "group": "Thalamus and Hypothalamus",
     "subgroup": "Thalamus"
   },
@@ -1188,8 +1188,8 @@
     "subgroup": "Brainstem"
   },
   "224": {
-    "name": "cerebellar nuclei",
-    "abbreviation": "Dt",
+    "name": "cerebellar cortex",
+    "abbreviation": "Cb-Crus I",
     "group": "Cerebellum",
     "subgroup": "Cerebellum"
   },
@@ -1248,8 +1248,8 @@
     "subgroup": "Brainstem"
   },
   "234": {
-    "name": "medullary reticular formation",
-    "abbreviation": "CMRt",
+    "name": "raphe nuclei of medulla",
+    "abbreviation": "Sp5",
     "group": "Brainstem",
     "subgroup": "Brainstem"
   },

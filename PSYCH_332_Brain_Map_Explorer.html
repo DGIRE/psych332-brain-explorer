@@ -197,7 +197,7 @@
     <canvas id="brainCanvas"></canvas>
   </div>
 
-  <div class="version-label" id="versionLabel" style="display:none;">Version 1.0</div>
+  <div class="version-label" id="versionLabel" style="display:none;">Version 1.1</div>
 
   <div class="region-tooltip" id="tooltip">
     <div class="tt-name" id="ttName"></div>
@@ -309,9 +309,9 @@
     }
 
     function drawBoundaries() {
-      // Draw subtle boundaries between regions
-      // Use region NAMES (not raw IDs) so that multiple IDs mapping
-      // to the same structure don't produce spurious borders
+      // All labeled regions are separated by background (ID 0) gaps in the atlas.
+      // Draw a subtle outline at the outer edge of each named region where it
+      // meets background, giving each structure a visible boundary.
       const w = canvas.width;
       const h = canvas.height;
       const imageData = ctx.getImageData(0, 0, w, h);
@@ -327,7 +327,6 @@
         for (let x = 1; x < w - 1; x++) {
           const dataX = Math.floor(x / displayScale);
           const dataY = Math.floor(y / displayScale);
-
           if (dataY >= mapHeight || dataX >= mapWidth) continue;
 
           const id = labeledMap[dataY][dataX];
@@ -336,19 +335,22 @@
           const name = idToName[id] || '';
           if (!name) continue;
 
-          // Check if any neighbor has a different named region
+          // Check if any neighbor is background or a differently-named region
           let isBorder = false;
           for (const [dx, dy] of [[-1,0],[1,0],[0,-1],[0,1]]) {
             const nx = Math.floor((x + dx) / displayScale);
             const ny = Math.floor((y + dy) / displayScale);
             if (ny >= 0 && ny < mapHeight && nx >= 0 && nx < mapWidth) {
               const nid = labeledMap[ny][nx];
-              if (nid > 0) {
-                const nname = idToName[nid] || '';
-                if (nname && nname !== name) {
-                  isBorder = true;
-                  break;
-                }
+              if (nid <= 0) {
+                // This pixel borders background — it's an edge
+                isBorder = true;
+                break;
+              }
+              const nname = idToName[nid] || '';
+              if (nname !== name) {
+                isBorder = true;
+                break;
               }
             }
           }
@@ -358,7 +360,7 @@
             pixels[idx] = 60;
             pixels[idx + 1] = 90;
             pixels[idx + 2] = 120;
-            pixels[idx + 3] = 180;
+            pixels[idx + 3] = 140;
           }
         }
       }
