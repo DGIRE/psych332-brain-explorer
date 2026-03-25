@@ -197,7 +197,7 @@
     <canvas id="brainCanvas"></canvas>
   </div>
 
-  <div class="version-label" id="versionLabel" style="display:none;">Version 1.3</div>
+  <div class="version-label" id="versionLabel" style="display:none;">Version 1.4</div>
 
   <div class="region-tooltip" id="tooltip">
     <div class="tt-name" id="ttName"></div>
@@ -299,19 +299,19 @@
       ctx.drawImage(blankImg, 0, 0, displayWidth, displayHeight);
 
       // Paint over corner artifact markers with white background
-      // These are small squares at the four corners of the atlas image
+      // These are colored squares at the four corners of the atlas image
       const cornerRegions = [
-        { y: 3, x: 5, h: 34, w: 43 },    // top-left
-        { y: 594, x: 7, h: 34, w: 43 },   // bottom-left
-        { y: 5, x: 2014, h: 34, w: 43 },  // top-right
-        { y: 594, x: 2017, h: 34, w: 43 }  // bottom-right
+        { y: 0, x: 0, h: 42, w: 53 },       // top-left
+        { y: 589, x: 0, h: 44, w: 55 },      // bottom-left
+        { y: 0, x: 2009, h: 44, w: 56 },     // top-right
+        { y: 589, x: 2012, h: 44, w: 53 }    // bottom-right
       ];
       ctx.fillStyle = '#ffffff';
       for (const cr of cornerRegions) {
-        const sx = Math.round(cr.x * displayScale);
-        const sy = Math.round(cr.y * displayScale);
-        const sw = Math.round(cr.w * displayScale);
-        const sh = Math.round(cr.h * displayScale);
+        const sx = Math.floor(cr.x * displayScale);
+        const sy = Math.floor(cr.y * displayScale);
+        const sw = Math.ceil(cr.w * displayScale) + 1;
+        const sh = Math.ceil(cr.h * displayScale) + 1;
         ctx.fillRect(sx, sy, sw, sh);
       }
 
