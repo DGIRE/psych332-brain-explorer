@@ -360,12 +360,12 @@
       if (!selectedInfo || !selectedInfo.name) return;
 
       const useGroup = document.getElementById('groupHighlight').checked;
-      const matchKey = useGroup ? selectedInfo.group : selectedInfo.name;
+      const matchKey = useGroup ? (selectedInfo.subgroup || selectedInfo.name) : selectedInfo.name;
 
-      // Build set of all IDs belonging to the matched region/group
+      // Build set of all IDs belonging to the matched region/subgroup
       const matchingIds = new Set();
       for (const [idStr, info] of Object.entries(regionIdMap)) {
-        const compareKey = useGroup ? info.group : info.name;
+        const compareKey = useGroup ? (info.subgroup || info.name) : info.name;
         if (compareKey === matchKey && compareKey) {
           matchingIds.add(parseInt(idStr));
         }
@@ -451,12 +451,19 @@
       }
       // Capitalize first letter of name
       const displayName = region.name.charAt(0).toUpperCase() + region.name.slice(1);
-      panel.innerHTML = `
-        <div class="selected-name">${displayName}</div>
-        <div class="selected-detail">
-          ${region.abbreviation && region.abbreviation !== 'nan' ? `<strong>${region.abbreviation}</strong> — ` : ''}${region.group || ''}
-        </div>
-      `;
+      const useGroup = document.getElementById('groupHighlight').checked;
+      const subgroup = region.subgroup || '';
+      const groupLabel = region.group || '';
+
+      let detailHTML = '';
+      if (useGroup && subgroup) {
+        detailHTML = `<div class="selected-name">${subgroup}</div>
+          <div class="selected-detail">${displayName}${region.abbreviation && region.abbreviation !== 'nan' ? ` (<strong>${region.abbreviation}</strong>)` : ''} — ${groupLabel}</div>`;
+      } else {
+        detailHTML = `<div class="selected-name">${displayName}</div>
+          <div class="selected-detail">${region.abbreviation && region.abbreviation !== 'nan' ? `<strong>${region.abbreviation}</strong> — ` : ''}${subgroup || groupLabel}</div>`;
+      }
+      panel.innerHTML = detailHTML;
     }
 
     // Mouse move: show tooltip
