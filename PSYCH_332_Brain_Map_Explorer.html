@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PSYCH 332 Brain Map Explorer</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: linear-gradient(135deg, #0f1d2d 0%, #163e65 100%);
+      color: #e8eef5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    header h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #ffffff;
+      margin-bottom: 6px;
+    }
+
+    header p {
+      font-size: 1rem;
+      color: #b0c4de;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 60px 20px;
+      color: #b0c4de;
+      font-size: 1.1rem;
+    }
+
+    .loading .spinner {
+      display: inline-block;
+      width: 28px;
+      height: 28px;
+      border: 3px solid rgba(7, 121, 190, 0.3);
+      border-top-color: #0779BE;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-bottom: 12px;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .canvas-wrapper {
+      position: relative;
+      background: #0a1520;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+      cursor: crosshair;
+    }
+
+    canvas {
+      display: block;
+    }
+
+    /* Floating tooltip that follows cursor */
+    .region-tooltip {
+      position: fixed;
+      pointer-events: none;
+      background: rgba(15, 25, 40, 0.95);
+      border: 1px solid #0779BE;
+      border-radius: 6px;
+      padding: 8px 12px;
+      font-size: 0.85rem;
+      color: #e8eef5;
+      white-space: nowrap;
+      z-index: 1000;
+      opacity: 0;
+      transition: opacity 0.15s ease;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+    }
+
+    .region-tooltip.visible {
+      opacity: 1;
+    }
+
+    .region-tooltip .tt-name {
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: #ffffff;
+    }
+
+    .region-tooltip .tt-group {
+      font-size: 0.78rem;
+      color: #7a9ec4;
+      margin-top: 2px;
+    }
+
+    .region-tooltip .tt-abbr {
+      font-size: 0.78rem;
+      color: #0779BE;
+      font-weight: 600;
+    }
+
+    /* Info panel below the map */
+    .info-panel {
+      margin-top: 16px;
+      padding: 16px 24px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 8px;
+      text-align: center;
+      min-width: 400px;
+    }
+
+    .info-panel .selected-name {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: #ffffff;
+    }
+
+    .info-panel .selected-detail {
+      font-size: 0.9rem;
+      color: #b0c4de;
+      margin-top: 4px;
+    }
+
+    .info-panel .hint {
+      font-size: 0.85rem;
+      color: #4a6a8a;
+      font-style: italic;
+    }
+
+    footer {
+      margin-top: 40px;
+      padding: 20px;
+      text-align: center;
+      color: #7a9ec4;
+      font-size: 0.85rem;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>PSYCH 332 Brain Map Explorer</h1>
+    <p>Click on any brain region to identify it</p>
+  </header>
+
+  <div id="loadingIndicator" class="loading">
+    <div class="spinner"></div>
+    <div>Loading brain map data...</div>
+  </div>
+
+  <div class="canvas-wrapper" id="canvasWrapper" style="display:none;">
+    <canvas id="brainCanvas"></canvas>
+  </div>
+
+  <div class="region-tooltip" id="tooltip">
+    <div class="tt-name" id="ttName"></div>
+    <div class="tt-abbr" id="ttAbbr"></div>
+    <div class="tt-group" id="ttGroup"></div>
+  </div>
+
+  <div class="info-panel" id="infoPanel">
+    <div class="hint" id="infoContent">Click on the brain map to select a region</div>
+  </div>
+
+  <footer>
+    <p>PSYCH 332 — University of Washington — Brain Map Explorer<br>
+    Data sourced from Allen Human Brain Atlas</p>
+  </footer>
+
+  <script>
+    // ============================================================
+    // STATE
+    // ============================================================
+    let labeledMap = null;      // 2D Int16Array-of-arrays [row][col]
+    let regionIdMap = null;     // { "id": { name, abbreviation, group } }
+    let mapWidth = 0;
+    let mapHeight = 0;
+    let displayScale = 1;      // scale factor for rendering
+    let selectedRegionId = null;
+    let hoveredRegionId = null;
+
+    const canvas = document.getElementById('brainCanvas');
+    const ctx = canvas.getContext('2d');
+    const wrapper = document.getElementById('canvasWrapper');
+    const tooltip = document.getElementById('tooltip');
+
+    // ============================================================
+    // DATA LOADING
+    // ============================================================
+    async function loadData() {
+      try {
+        // Load both files in parallel
+        const [mapResponse, idMapResponse, blankResponse] = await Promise.all([
+          fetch('Data/labeled_brain_map.json'),
+          fetch('Data/region_id_map.json'),
+          fetch('Data/blank_brain_map.png')
+        ]);
+
+        // Parse the labeled map (RLE encoded)
+        const mapData = await mapResponse.json();
+        mapHeight = mapData.height;
+        mapWidth = mapData.width;
+
+        // Decode RLE into a 2D array
+        labeledMap = new Array(mapHeight);
+        for (let r = 0; r < mapHeight; r++) {
+          labeledMap[r] = new Int16Array(mapWidth);
+          let col = 0;
+          for (const [value, count] of mapData.rle_rows[r]) {
+            for (let c = 0; c < count; c++) {
+              labeledMap[r][col++] = value;
+            }
+          }
+        }
+
+        // Parse region ID map
+        regionIdMap = await idMapResponse.json();
+
+        // Load blank brain image
+        const blankBlob = await blankResponse.blob();
+        const blankImg = await createImageBitmap(blankBlob);
+
+        console.log(`Brain map loaded: ${mapWidth}x${mapHeight}, ${Object.keys(regionIdMap).length} regions`);
+
+        return blankImg;
+      } catch (err) {
+        console.error('Error loading data:', err);
+        document.getElementById('loadingIndicator').innerHTML =
+          `<div style="color:#e74c3c;">Error loading data: ${err.message}<br>Make sure the Data/ folder is in the same directory.</div>`;
+        throw err;
+      }
+    }
+
+    // ============================================================
+    // RENDERING
+    // ============================================================
+    let blankImageData = null;  // Stored copy of the base brain image
+
+    function initCanvas(blankImg) {
+      // Scale to fit viewport (max ~1000px wide)
+      const maxWidth = Math.min(window.innerWidth - 60, 1200);
+      displayScale = maxWidth / mapWidth;
+      if (displayScale > 1) displayScale = 1;
+
+      const displayWidth = Math.round(mapWidth * displayScale);
+      const displayHeight = Math.round(mapHeight * displayScale);
+
+      canvas.width = displayWidth;
+      canvas.height = displayHeight;
+
+      // Draw the blank brain template
+      ctx.drawImage(blankImg, 0, 0, displayWidth, displayHeight);
+
+      // Store a copy of the base image for redrawing
+      blankImageData = ctx.getImageData(0, 0, displayWidth, displayHeight);
+
+      // Draw region boundaries on top
+      drawBoundaries();
+
+      // Store the full base (blank + boundaries) for fast redraws
+      blankImageData = ctx.getImageData(0, 0, displayWidth, displayHeight);
+    }
+
+    function drawBoundaries() {
+      // Draw subtle boundaries between regions
+      const w = canvas.width;
+      const h = canvas.height;
+      const imageData = ctx.getImageData(0, 0, w, h);
+      const pixels = imageData.data;
+
+      for (let y = 1; y < h - 1; y++) {
+        for (let x = 1; x < w - 1; x++) {
+          // Map display coords back to data coords
+          const dataX = Math.floor(x / displayScale);
+          const dataY = Math.floor(y / displayScale);
+
+          if (dataY >= mapHeight || dataX >= mapWidth) continue;
+
+          const id = labeledMap[dataY][dataX];
+          if (id <= 0) continue; // skip background/boundary
+
+          // Check if any neighbor has a different positive ID
+          let isBorder = false;
+          for (const [dx, dy] of [[-1,0],[1,0],[0,-1],[0,1]]) {
+            const nx = Math.floor((x + dx) / displayScale);
+            const ny = Math.floor((y + dy) / displayScale);
+            if (ny >= 0 && ny < mapHeight && nx >= 0 && nx < mapWidth) {
+              const nid = labeledMap[ny][nx];
+              if (nid !== id && nid > 0) {
+                isBorder = true;
+                break;
+              }
+            }
+          }
+
+          if (isBorder) {
+            const idx = (y * w + x) * 4;
+            pixels[idx] = 60;      // R
+            pixels[idx + 1] = 90;  // G
+            pixels[idx + 2] = 120; // B
+            pixels[idx + 3] = 180; // A
+          }
+        }
+      }
+
+      ctx.putImageData(imageData, 0, 0);
+    }
+
+    function redraw() {
+      // Restore base image
+      ctx.putImageData(blankImageData, 0, 0);
+
+      if (selectedRegionId === null) return;
+
+      // Overlay selected region in red
+      const w = canvas.width;
+      const h = canvas.height;
+      const imageData = ctx.getImageData(0, 0, w, h);
+      const pixels = imageData.data;
+
+      // Find all pixel IDs that map to the same region name as the selected ID
+      const selectedInfo = regionIdMap[String(selectedRegionId)];
+      if (!selectedInfo || !selectedInfo.name) return;
+
+      const selectedName = selectedInfo.name;
+
+      // Build set of all IDs belonging to this named region
+      const matchingIds = new Set();
+      for (const [idStr, info] of Object.entries(regionIdMap)) {
+        if (info.name === selectedName) {
+          matchingIds.add(parseInt(idStr));
+        }
+      }
+
+      for (let y = 0; y < h; y++) {
+        const dataY = Math.floor(y / displayScale);
+        if (dataY >= mapHeight) continue;
+
+        for (let x = 0; x < w; x++) {
+          const dataX = Math.floor(x / displayScale);
+          if (dataX >= mapWidth) continue;
+
+          const id = labeledMap[dataY][dataX];
+          if (matchingIds.has(id)) {
+            const idx = (y * w + x) * 4;
+            // Red overlay with some transparency blending
+            pixels[idx] = Math.min(255, pixels[idx] * 0.3 + 200);       // R
+            pixels[idx + 1] = Math.round(pixels[idx + 1] * 0.2 + 30);   // G
+            pixels[idx + 2] = Math.round(pixels[idx + 2] * 0.2 + 30);   // B
+            pixels[idx + 3] = 255;
+          }
+        }
+      }
+
+      ctx.putImageData(imageData, 0, 0);
+    }
+
+    // ============================================================
+    // INTERACTION
+    // ============================================================
+    function getRegionAtPixel(clientX, clientY) {
+      const rect = canvas.getBoundingClientRect();
+      const canvasX = clientX - rect.left;
+      const canvasY = clientY - rect.top;
+
+      const dataX = Math.floor(canvasX / displayScale);
+      const dataY = Math.floor(canvasY / displayScale);
+
+      if (dataY < 0 || dataY >= mapHeight || dataX < 0 || dataX >= mapWidth) return null;
+
+      const id = labeledMap[dataY][dataX];
+      if (id <= 0) return null;
+
+      const info = regionIdMap[String(id)];
+      if (!info || !info.name) return null;
+
+      return { id, ...info };
+    }
+
+    function updateTooltip(e, region) {
+      if (!region) {
+        tooltip.classList.remove('visible');
+        return;
+      }
+
+      document.getElementById('ttName').textContent = region.name;
+      document.getElementById('ttAbbr').textContent = region.abbreviation || '';
+      document.getElementById('ttGroup').textContent = region.group || '';
+
+      // Position near cursor
+      let tx = e.clientX + 16;
+      let ty = e.clientY - 10;
+
+      // Keep on screen
+      const tw = tooltip.offsetWidth || 200;
+      const th = tooltip.offsetHeight || 60;
+      if (tx + tw > window.innerWidth - 10) tx = e.clientX - tw - 16;
+      if (ty + th > window.innerHeight - 10) ty = e.clientY - th - 10;
+      if (ty < 10) ty = 10;
+
+      tooltip.style.left = tx + 'px';
+      tooltip.style.top = ty + 'px';
+      tooltip.classList.add('visible');
+    }
+
+    function updateInfoPanel(region) {
+      const panel = document.getElementById('infoContent');
+      if (!region) {
+        panel.innerHTML = '<span class="hint">Click on the brain map to select a region</span>';
+        return;
+      }
+      panel.innerHTML = `
+        <div class="selected-name">${region.name}</div>
+        <div class="selected-detail">
+          ${region.abbreviation ? `<strong>${region.abbreviation}</strong> — ` : ''}${region.group || ''}
+        </div>
+      `;
+    }
+
+    // Mouse move: show tooltip
+    canvas.addEventListener('mousemove', (e) => {
+      const region = getRegionAtPixel(e.clientX, e.clientY);
+      const newHoveredId = region ? region.id : null;
+
+      if (newHoveredId !== hoveredRegionId) {
+        hoveredRegionId = newHoveredId;
+        canvas.style.cursor = region ? 'pointer' : 'crosshair';
+      }
+
+      updateTooltip(e, region);
+    });
+
+    // Mouse leave: hide tooltip
+    canvas.addEventListener('mouseleave', () => {
+      hoveredRegionId = null;
+      tooltip.classList.remove('visible');
+    });
+
+    // Click: select region, highlight in red
+    canvas.addEventListener('click', (e) => {
+      const region = getRegionAtPixel(e.clientX, e.clientY);
+
+      if (!region) {
+        // Clicked on background — deselect
+        selectedRegionId = null;
+        redraw();
+        updateInfoPanel(null);
+        return;
+      }
+
+      // If clicking the same region, deselect
+      if (selectedRegionId !== null) {
+        const prevInfo = regionIdMap[String(selectedRegionId)];
+        if (prevInfo && prevInfo.name === region.name) {
+          selectedRegionId = null;
+          redraw();
+          updateInfoPanel(null);
+          return;
+        }
+      }
+
+      selectedRegionId = region.id;
+      redraw();
+      updateInfoPanel(region);
+    });
+
+    // ============================================================
+    // INIT
+    // ============================================================
+    async function init() {
+      const blankImg = await loadData();
+
+      document.getElementById('loadingIndicator').style.display = 'none';
+      wrapper.style.display = 'block';
+
+      initCanvas(blankImg);
+    }
+
+    init();
+  </script>
+</body>
+</html>
