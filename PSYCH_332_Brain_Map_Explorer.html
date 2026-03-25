@@ -159,6 +159,13 @@
       font-style: italic;
     }
 
+    .version-label {
+      margin-top: 8px;
+      font-size: 0.75rem;
+      color: #4a6a8a;
+      text-align: center;
+    }
+
     footer {
       margin-top: 40px;
       padding: 20px;
@@ -189,6 +196,8 @@
   <div class="canvas-wrapper" id="canvasWrapper" style="display:none;">
     <canvas id="brainCanvas"></canvas>
   </div>
+
+  <div class="version-label" id="versionLabel" style="display:none;">Version 1.0</div>
 
   <div class="region-tooltip" id="tooltip">
     <div class="tt-name" id="ttName"></div>
@@ -301,42 +310,55 @@
 
     function drawBoundaries() {
       // Draw subtle boundaries between regions
+      // Use region NAMES (not raw IDs) so that multiple IDs mapping
+      // to the same structure don't produce spurious borders
       const w = canvas.width;
       const h = canvas.height;
       const imageData = ctx.getImageData(0, 0, w, h);
       const pixels = imageData.data;
 
+      // Build a fast lookup: pixel ID -> region name
+      const idToName = {};
+      for (const [idStr, info] of Object.entries(regionIdMap)) {
+        idToName[parseInt(idStr)] = info.name || '';
+      }
+
       for (let y = 1; y < h - 1; y++) {
         for (let x = 1; x < w - 1; x++) {
-          // Map display coords back to data coords
           const dataX = Math.floor(x / displayScale);
           const dataY = Math.floor(y / displayScale);
 
           if (dataY >= mapHeight || dataX >= mapWidth) continue;
 
           const id = labeledMap[dataY][dataX];
-          if (id <= 0) continue; // skip background/boundary
+          if (id <= 0) continue;
 
-          // Check if any neighbor has a different positive ID
+          const name = idToName[id] || '';
+          if (!name) continue;
+
+          // Check if any neighbor has a different named region
           let isBorder = false;
           for (const [dx, dy] of [[-1,0],[1,0],[0,-1],[0,1]]) {
             const nx = Math.floor((x + dx) / displayScale);
             const ny = Math.floor((y + dy) / displayScale);
             if (ny >= 0 && ny < mapHeight && nx >= 0 && nx < mapWidth) {
               const nid = labeledMap[ny][nx];
-              if (nid !== id && nid > 0) {
-                isBorder = true;
-                break;
+              if (nid > 0) {
+                const nname = idToName[nid] || '';
+                if (nname && nname !== name) {
+                  isBorder = true;
+                  break;
+                }
               }
             }
           }
 
           if (isBorder) {
             const idx = (y * w + x) * 4;
-            pixels[idx] = 60;      // R
-            pixels[idx + 1] = 90;  // G
-            pixels[idx + 2] = 120; // B
-            pixels[idx + 3] = 180; // A
+            pixels[idx] = 60;
+            pixels[idx + 1] = 90;
+            pixels[idx + 2] = 120;
+            pixels[idx + 3] = 180;
           }
         }
       }
@@ -522,6 +544,7 @@
       document.getElementById('loadingIndicator').style.display = 'none';
       document.getElementById('controlsPanel').style.display = 'flex';
       wrapper.style.display = 'block';
+      document.getElementById('versionLabel').style.display = 'block';
 
       initCanvas(blankImg);
 
